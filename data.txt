@@ -1,0 +1,7 @@
+ability = 0
+plrws = 25
+walkpattern = 0
+canusemisc = 0
+misccd = 0
+url =  
+discordid = 0
