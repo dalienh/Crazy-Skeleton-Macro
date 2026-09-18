@@ -23,7 +23,7 @@ global url := " "
 global discordid := " "
 global pslink := " "
 global paused := false
-global rejoined := true ;change for testing purposes rn
+global rejoined := false ;change for testing purposes rn
 
 
 ;newTime := oldTime * (oldSpeed / newSpeed)
