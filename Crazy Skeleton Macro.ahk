@@ -23,7 +23,7 @@ global url := " "
 global discordid := " "
 global pslink := " "
 global paused := false
-global rejoined := false ;change for testing purposes rn
+global rejoined := true ;change for testing purposes rn
 
 
 ;newTime := oldTime * (oldSpeed / newSpeed)
@@ -212,6 +212,9 @@ rocheck(*){
 }
 
 virus404check(*) {
+	;wont be used, too innacurate
+	;psure u cant even get a sans that knocks u back if the tree spawns
+	;idk i'll see
     target := 0xBC1213
 
     for outer, _ in [1,2,3] {
@@ -222,7 +225,7 @@ virus404check(*) {
 
             color := PixelGetColor(x, y, "RGB")
 
-            if (ColorClose(color, target, 30)) {
+            if (ColorClose(color, target, 15)) {
                 PingDiscord("<@" discordid "> FOUND VIRUS404")
                 pausemacro() ; or ExitApp
                 return
@@ -323,7 +326,7 @@ raresanscheck(*){
 	engisanscheck()
 	rocheck()
 	parasitefreshcheck()
-	virus404check()
+	;virus404check()
 }
 
 pausemacro() {
@@ -561,7 +564,20 @@ runpattern(pattern) {
 
 
 
+declineupdate(*){
+	;im unsure if it changes per update
+	;if it does i'll add a pixel check
+	MouseMove(1450, 240, 0)
+	Sleep 200
+	Click 2
+	Sleep 200
+	MouseMove(1452, 242, 0)
+	Sleep 200
+	Click 2
+}
+
 getclovers(*){
+	declineupdate()
 	runpattern(getcloverspattern)
 	global rejoined := false
 	reset()
@@ -663,4 +679,4 @@ v::{
 
 n::{
 	resumemacro()
-}
+} 
