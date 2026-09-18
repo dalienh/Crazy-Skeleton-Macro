@@ -402,6 +402,7 @@ reset(*){
 }
 
 LoadSettings()
+changeallsleeps()
 
 changeallsleeps() {
 	global realsleeps, plrws
@@ -590,7 +591,6 @@ getclovers(*){
 
 
 start(*){
-	changeallsleeps()
 	if (rejoined = true){
 		getclovers()
 	}
