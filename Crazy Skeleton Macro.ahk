@@ -1,8 +1,11 @@
-﻿;this code is very easy to read
+;this code is very easy to read
 ;not easy to write tho
 ;fuck ahk
 ;you can easily change or make your own shit here
 ;its open sourced :innocent:
+
+CoordMode "Pixel", "Screen"
+
 
 ;VARIABLES
 global canusemisc := false
@@ -12,12 +15,16 @@ global defaultws := 25
 global plrws := 25
 global walkpattern := 0
 global misccd := 0
-global dead := 0
+global dead := false
 global shiftlocked := false
 global weebhookurl := " "
 global userid := 0
 global url := " "
 global discordid := " "
+global pslink := " "
+global paused := false
+global rejoined := false ;change for testing purposes rn
+
 
 ;newTime := oldTime * (oldSpeed / newSpeed)
 ;ARRAYS
@@ -31,7 +38,11 @@ basesleeps := [
 	7000,
 	8000,
 	9000,
-	10000
+	10000,
+	1500,
+	2500,
+	3500,
+	500
 ]
 global realsleeps := basesleeps.Clone()
 
@@ -66,48 +77,72 @@ leftrightloop := [
 ]
 
 
+getcloverspattern := [
+	[ ["s","space",],10],
+	[ ["s","space",],3],
+	[ ["w"],		 13],
+    [ ["d"],		 12],
+    [ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["w"],		 7],
+	[ ["a"],		 2],
+	[ ["w"],		 2],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+	[ ["e"],		 1],
+]
+
+
 
 ;FUNCTIONS
 
 ;thank god for ai cause this is really not easy
 ;its the same in C i agree but bro i hate this syntax
+
 LoadSettings() {
-    global ability, plrws, walkpattern, canusemisc, misccd, url, discordid
+	global ability, plrws, walkpattern, canusemisc, misccd, url, discordid, pslink
 
-    if !FileExist("data.txt")
-        return
+	if !FileExist("data.txt")
+		return
 
-    raw := FileRead("data.txt")
-    lines := StrSplit(raw, "`n")
+	raw := FileRead("data.txt")
+	lines := StrSplit(raw, "`n")
 
-    for line in lines {
-        if line = ""
-            continue
+	for line in lines {
+		if line = ""
+			continue
 
-        parts := StrSplit(line, "=")
-        key := Trim(parts[1])
-        val := Trim(parts[2])
+		parts := StrSplit(line, "=",, 2)
+		key := Trim(parts[1])
+		val := Trim(parts[2])
 
-        ; numeric values
-        if IsNumber(val)
-            val := Integer(val)
+		if IsNumber(val)
+			val := Integer(val)
 
-        switch key {
-            case "ability":       ability := val
-            case "plrws":         plrws := val
-            case "walkpattern":   walkpattern := val
-            case "canusemisc":    canusemisc := val
-            case "misccd":        misccd := val
-
-            case "url":           url := val
-            case "discordid":     discordid := val
+		switch key {
+			case "ability":       ability := val
+			case "plrws":         plrws := val
+			case "walkpattern":   walkpattern := val
+			case "canusemisc":    canusemisc := val
+			case "misccd":        misccd := val
+			case "url":           url := val
+			case "discordid":     discordid := val
+			case "pslink":        pslink := val
         }
     }
 }
 
 
+
 SaveSettings() {
-    global ability, plrws, walkpattern, canusemisc, misccd, url, discordid
+    global ability, plrws, walkpattern, canusemisc, misccd, url, discordid, pslink
 
     text :=
     (
@@ -117,7 +152,8 @@ SaveSettings() {
     "canusemisc = " canusemisc "`n"
     "misccd = " misccd "`n"
 	"url =  " url "`n"
-	"discordid = " discordid
+	"discordid = " discordid "`n"
+	"pslink = " pslink
     )
 
     FileDelete("data.txt") ; optional but clean
@@ -154,38 +190,132 @@ PingDiscord(msg) {
 }
 
 deathcheck(*){
-	color := PixelGetColor(11, 919)
+	color := PixelGetColor(11, 919, "RGB")
 	if (color = 0xff0000){
 		global dead := true
 	}
 }
 engisanscheck(*){
-	color := PixelGetColor(955, 135)
+	color := PixelGetColor(955, 135, "RGB")
 	if (color = 0xB37804){
 		PingDiscord("<@" discordid "> FOUND ENGI")
+		pausemacro()
 	}
 }
 
 rocheck(*){
-	color := PixelGetColor(955, 135)
+	color := PixelGetColor(955, 135, "RGB")
 	if (color = 0x5b3d00){
 		PingDiscord("<@" discordid "> FOUND RO")
-
+		pausemacro()
 	}
 }
 
-virus404check(*){
-	color := PixelGetColor(900, 777)
-	target := 0xBC1213
-	if (ColorClose(color, target, 10)){
-		PingDiscord(discordid " FOUND VIRUS404")
+virus404check(*) {
+    target := 0xBC1213
+
+    for outer, _ in [1,2,3] {
+        for inner, _ in [1,2,3] {
+
+            x := 665 + (outer - 2)
+            y := 1025 + (inner - 2)
+
+            color := PixelGetColor(x, y, "RGB")
+
+            if (ColorClose(color, target, 30)) {
+                PingDiscord("<@" discordid "> FOUND VIRUS404")
+                pausemacro() ; or ExitApp
+                return
+            }
+        }
+    }
+}
+
+
+exitroblox(*){
+	try ProcessClose("RobloxPlayerBeta.exe")
+	RunWait("taskkill /IM RobloxPlayerBeta.exe /F", , "Hide")
+}
+
+robloxrunning(*){
+	return ProcessExist("RobloxPlayerBeta.exe")
+}
+
+disconnected(*) {
+	global pslink
+	global shiftlocked := false
+
+	pausemacro()
+	exitroblox()
+	Sleep 500
+
+	;wait until roblox fully closes
+	while robloxrunning() {
+		Sleep 300
 	}
+
+	Run(pslink)
+
+	;wait for roblox to start
+	while !robloxrunning() {
+		Sleep 300
+	}
+
+	;wait for roblox window to exist
+	WinWait("Roblox", , 10)
+
+	;give roblox focus
+	WinActivate("Roblox")
+	Sleep 200
+	WinWaitActive("Roblox", , 5)
+
+	;force windowed mode
+	Send "!{Enter}"
+	Sleep 500
+	Send "!{Enter}"
+
+	;loading sleep
+	Sleep 5000
+
+	global rejoined := true
+	resumemacro()
+	start()
+}
+
+disconnectcheck(*){
+	coords := [
+		[765, 420],
+		[1145, 420],
+		[765, 640],
+		[1145, 640]
+	]
+
+	colors := []
+
+	for i, pos in coords {
+		x := pos[1]
+		y := pos[2]
+		color := PixelGetColor(x, y, "RGB")
+		if (color = 0x393b3d){
+			disconnected()
+		}
+	}
+
 }
 
 parasitefreshcheck(*){
-	color := PixelGetColor(25, 950)
+	color := PixelGetColor(25, 950, "RGB")
 	if (color = 0xAA00FF){
-		PingDiscord(discordid " FOUND PARASITIC FRESH")
+		PingDiscord("<@" discordid ">  FOUND PARASITIC FRESH")
+		pausemacro()
+	}
+}
+
+grusanscheck(*){
+	color := PixelGetColor(955, 135, "RGB")
+	if (color = 0xc6c6c6){
+		PingDiscord("<@" discordid ">  FOUND GRU")
+		pausemacro()
 	}
 }
 
@@ -196,7 +326,27 @@ raresanscheck(*){
 	virus404check()
 }
 
+pausemacro() {
+	global paused := true
+	;stop timers
+	stopm1ing()
+	stopmisc()
+
+	;release movement keys
+	Send "{w up}{a up}{s up}{d up}"
+
+	;MsgBox "Macro paused, rare sans found"
+}
+
+;why? idk
+resumemacro(*){
+	global paused := false
+}
+
+;this fucking function became a check for everything
+;i honestly dont care since it works
 spamm1(*){
+	disconnectcheck()
 	deathcheck()
 	raresanscheck()
 	Send "{LButton}"
@@ -249,9 +399,14 @@ reset(*){
 }
 
 LoadSettings()
-changeallsleeps(*){
-	for i, v in basesleeps{
-		realsleeps[i] := v * (defaultws/plrws)
+
+changeallsleeps() {
+	global realsleeps, plrws
+
+	ratio := 25 / plrws
+
+	for i, v in realsleeps {
+		realsleeps[i] := v * ratio
 	}
 }
 
@@ -306,6 +461,11 @@ discordideditchanged(ctrl, info){
     SaveSettings()
 }
 
+pslinkchanged(ctrl, info){
+	global pslink := ctrl.Value
+	SaveSettings()
+}
+
 
 leftrightpattern(*){
 	if (shiftlocked = false){
@@ -325,12 +485,15 @@ leftrightpattern(*){
 	startm1ing()
 	runpattern(leftrightstart)
 	while true{
-		if (dead = 1){
+		if (dead = true){
 			Sleep 10000
 			start()
 			break
 		}
 		if (!runpattern(leftrightloop)){
+			if (paused){
+				return
+			}
 			Sleep 9000
 			start()
 			break
@@ -352,6 +515,9 @@ snakepattern(*){
 			continue
 		}
 		if (!runpattern(snakeloop)){
+			if (paused){
+				return
+			}
 			snakecompleted := 0
 			Sleep 9000
 			start()
@@ -363,19 +529,31 @@ snakepattern(*){
 }
 
 runpattern(pattern) {
-	global realsleeps, dead
+    global realsleeps, paused, dead
 
-	for _, step in pattern {
-        if (dead = 1)
+    for step in pattern {
+
+        if (paused or dead)
             return false
 
-        key := step[1]
-        dur := step[2]
+        keys := step[1]
+        dur  := step[2]
 
-        Send "{" key " down}"
-        Sleep realsleeps[dur]   ; original math untouched
-        Send "{" key " up}"
+        ; convert single key → array
+        if !IsObject(keys)
+            keys := [keys]
+
+        ; press all keys
+        for k in keys
+            Send "{" k " down}"
+
+        Sleep realsleeps[dur]
+
+        ; release all keys
+        for k in keys
+            Send "{" k " up}"
     }
+
     return true
 }
 
@@ -383,9 +561,25 @@ runpattern(pattern) {
 
 
 
+getclovers(*){
+	runpattern(getcloverspattern)
+	global rejoined := false
+	reset()
+	Sleep 10000
+	start()
+}
+
+
+
+
+
 start(*){
+	changeallsleeps()
+	if (rejoined = true){
+		getclovers()
+	}
 	Send "{1}"
-	global dead := 0
+	global dead := false
 	Switch walkpattern{
 		Case 1:
 			runpattern(snakestart)
@@ -406,7 +600,7 @@ exitbtn.OnEvent("Click", (*) => ExitApp())
 
 
 keybinds(*){
-	MsgBox "k to start v to exit"
+	MsgBox "k to start, v to exit, n to resume macro"
 }
 startbtn := mygui.Add("Button", "x125 y20 w50 h30", "keybinds")
 startbtn.OnEvent("Click", keybinds)
@@ -442,6 +636,10 @@ discordidtext := mygui.Add("Text", "x20 y185", "Discordid:")
 discordidedit := mygui.Add("Edit", "x80 y180 w200", 0)
 discordidedit.OnEvent("LoseFocus", discordideditchanged)
 
+pslinktext := mygui.Add("Text", "x20 y210", "Private server:")
+pslinkedit := mygui.Add("Edit", "x90 y205 w200", "nil")
+pslinkedit.OnEvent("LoseFocus", pslinkchanged)
+
 abilitydropdown.Value := ability
 updownedit.Value := plrws
 miscbox.Value := canusemisc
@@ -449,6 +647,7 @@ misccdedit.Value := misccd / 1000
 patterndropdown.Value := walkpattern
 webhookedit.Value := url
 discordidedit.Value := discordid
+pslinkedit.Value := pslink
 
 
 mygui.Show("w300 h300")
@@ -460,4 +659,8 @@ k::{
 
 v::{
 	ExitApp()
+}
+
+n::{
+	resumemacro()
 }
