@@ -1,9 +1,10 @@
 made by @alien_from_area_51
-dm me with heavy criticism
+dm me with heavy criticism (bug reports)
 requires ahk
 give a lot of goodnight kisses to @baconsarepros44
 feel free to edit the macro
 if the macro gets a lot of support i'll start doing updates
+your resolution should be 1920x1080 at 100% scale if u want it to work
 
 <::: HOW TO MAKE A WEBHOOKURL :::>
 1. make your own discord server
